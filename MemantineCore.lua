@@ -160,7 +160,7 @@ function Memantine:GetJournalId()
 end
 
 function Memantine:IsEncounterJournalLootTabShown()
-  self:Debug("IsLootTab");
+  self:Debug("IsEncounterJournalLootTabShown");
 
   return EncounterJournal
     and EncounterJournal:IsShown()
