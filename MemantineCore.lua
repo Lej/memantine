@@ -20,7 +20,8 @@ function Memantine:OnInitialize()
   self:Debug("OnInitialize");
 
   self.gui = nil;
-  self.encounterIdToJournalId = self:CreateEncounterIdToJournalIdMap();
+  self.encounterIdToJournalId = self:CreateEncounterIdToJournalId();
+  self.difficultyIds = self:CreateDifficultyIds();
 
   self.db = LibStub("AceDB-3.0"):New("Memantine");
 
@@ -30,8 +31,8 @@ function Memantine:OnInitialize()
   self:RegisterChatCommand("memantine", "ChatCommand");
 end
 
-function Memantine:CreateEncounterIdToJournalIdMap()
-  self:Debug("CreateEncounterIdToJournalIdMap");
+function Memantine:CreateEncounterIdToJournalId()
+  self:Debug("CreateEncounterIdToJournalId");
 
   local encounterIdToJournalId = {};
   for journalId = 1, 3000 do
@@ -41,6 +42,38 @@ function Memantine:CreateEncounterIdToJournalIdMap()
     end
   end
   return encounterIdToJournalId;
+end
+
+function Memantine:CreateDifficultyIds()
+  self:Debug("CreateDifficultyIds");
+
+  local difficultyIds = {};
+
+  table.insert(difficultyIds, 17); -- Looking For Raid
+
+  for difficultyId = 1, 7 do
+    if (GetDifficultyInfo(difficultyId)) then
+      table.insert(difficultyIds, difficultyId);
+    end
+  end
+
+  for difficultyId = 9, 16 do
+    if (GetDifficultyInfo(difficultyId)) then
+      table.insert(difficultyIds, difficultyId);
+    end
+  end
+
+  for difficultyId = 18, 200 do
+    if (GetDifficultyInfo(difficultyId)) then
+      table.insert(difficultyIds, difficultyId);
+    end
+  end
+
+  table.insert(difficultyIds, 8); -- Mythic Keystone
+
+  self:Debug(table.concat(difficultyIds, ", "));
+
+  return difficultyIds;
 end
 
 -- For debug: /memantine 2124 1
@@ -187,6 +220,36 @@ function Memantine:UpdateVisibility()
 
 end
 
+function Memantine:IsValidInstanceDifficulty(difficultyId)
+
+  -- EJ_IsValidInstanceDifficulty(difficultyId) returns false for Classic Raids and Mythic Keystone
+
+  if (EncounterJournal) then
+    if (difficultyId == 9) then -- 40 Player
+      if (EncounterJournal.instanceID == 741) then return true; end -- Molten Core
+      if (EncounterJournal.instanceID == 742) then return true; end -- Blackwing Lair
+      if (EncounterJournal.instanceID == 744) then return true; end -- Temple of Ahn'Qiraj
+    elseif (difficultyId == 3) then -- 10 Player
+      if (EncounterJournal.instanceID == 743) then return true; end -- Ruins of Ahn'Qiraj
+    elseif (difficultyId == 8) then -- Mythic Keystone
+      if (EncounterJournal.instanceID == 968) then return true; end -- Atal'Dazar
+      if (EncounterJournal.instanceID == 1001) then return true; end -- Freehold
+      if (EncounterJournal.instanceID == 1012) then return true; end -- The MOTHERLODE!!
+      if (EncounterJournal.instanceID == 1036) then return true; end -- Shrine of the Storm
+      if (EncounterJournal.instanceID == 1030) then return true; end -- Temple of Sethraliss
+      if (EncounterJournal.instanceID == 1002) then return true; end -- Tol Dagor
+      if (EncounterJournal.instanceID == 1022) then return true; end -- The Underrot
+      if (EncounterJournal.instanceID == 1021) then return true; end -- Waycrest Manor
+      if (EncounterJournal.instanceID == 1041) then return true; end -- Kings' Rest
+      if (EncounterJournal.instanceID == 1023) then return true; end -- Siege of Boralus
+      if (EncounterJournal.instanceID == 1178) then return true; end -- Mechagon: Junkyard / Mechagon: Workshop
+    end
+  end
+
+  return EJ_IsValidInstanceDifficulty(difficultyId);
+
+end
+
 function Memantine:GuiUpdateDifficulties()
   self:Debug("GuiUpdateDifficulties");
 
@@ -203,8 +266,8 @@ function Memantine:GuiUpdateDifficulties()
 
   -- Create difficulty dropdowns
   local difficultyDropdowns = {};
-  for difficultyId = 1, 34 do
-    if EJ_IsValidInstanceDifficulty(difficultyId) then
+  for i, difficultyId in ipairs(self.difficultyIds) do
+    if self:IsValidInstanceDifficulty(difficultyId) then
       local difficultyName = GetDifficultyInfo(difficultyId);
       local difficultyDropdown = AceGui:Create("Dropdown");
       difficultyDropdown.journalId = journalId;
