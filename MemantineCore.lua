@@ -1,273 +1,293 @@
--- Data
+-- Terminology:
 
--- journalId: The encounterId as used in the encounter journal.
--- engageId: The enounterId as sent in the ENCOUNTER_START event.
-local Encounters = {
-  -- Atal'Dazar
-  { journalId = 2082, engageId = 2084 },
-  { journalId = 2083, engageId = 2086 },
-  { journalId = 2036, engageId = 2085 },
-  { journalId = 2030, engageId = 2087 },
-  -- Freehold
-  { journalId = 2094, engageId = 2095 },
-  { journalId = 2093, engageId = 2094 },
-  { journalId = 2102, engageId = 2093 },
-  { journalId = 2095, engageId = 2096 },
-  -- King's Rest
-  { journalId = 2170, engageId = 2140 },
-  { journalId = 2172, engageId = 2143 },
-  { journalId = 2165, engageId = 2139 },
-  { journalId = 2171, engageId = 2142 },
-  -- Shrine of the Strom
-  { journalId = 2153, engageId = 2130 },
-  { journalId = 2154, engageId = 2131 },
-  { journalId = 2155, engageId = 2132 },
-  { journalId = 2156, engageId = 2133 },
-  -- Siege of Boralus
-  { journalId = 2133, engageId = 2097 },
-  { journalId = 2134, engageId = 2099 },
-  { journalId = 2173, engageId = 2109 },
-  { journalId = 2140, engageId = 2100 },
-  -- Temple of Sethraliss
-  { journalId = 2142, engageId = 2124 },
-  { journalId = 2145, engageId = 2127 },
-  { journalId = 2144, engageId = 2126 },
-  { journalId = 2143, engageId = 2125 },
-  -- The MOTHERLOAD!!
-  { journalId = 2109, engageId = 2105 },
-  { journalId = 2116, engageId = 2108 },
-  { journalId = 2115, engageId = 2107 },
-  { journalId = 2114, engageId = 2106 },
-  -- Tol Dagor
-  { journalId = 2098, engageId = 2102 },
-  { journalId = 2096, engageId = 2104 },
-  { journalId = 2097, engageId = 2101 },
-  { journalId = 2099, engageId = 2103 },
-  -- Underrot
-  { journalId = 2158, engageId = 2123 },
-  { journalId = 2131, engageId = 2118 },
-  { journalId = 2157, engageId = 2111 },
-  { journalId = 2130, engageId = 2112 },
-  -- Waycrest Manor
-  { journalId = 2126, engageId = 2114 },
-  { journalId = 2129, engageId = 2117 },
-  { journalId = 2125, engageId = 2113 },
-  { journalId = 2127, engageId = 2115 },
-  { journalId = 2128, engageId = 2116 },
-  -- Uldir
-  { journalId = 2146, engageId = 2128 },
-  { journalId = 2147, engageId = 2122 },
-  { journalId = 2167, engageId = 2141 },
-  { journalId = 2194, engageId = 2135 },
-  { journalId = 2168, engageId = 2144 },
-  { journalId = 2166, engageId = 2134 },
-  { journalId = 2169, engageId = 2136 },
-  { journalId = 2195, engageId = 2145 },
-}
+-- journalId:
+--   The id of an encounter that is selected in the encounter journal.
+--   This is passed as input to EJ_GetEncounterInfo().
 
-EventToJournal = (function()
-  local map = {}
-  for _, encounter in pairs(Encounters) do
-    map[encounter.engageId] = encounter.journalId
-  end
-  return map
-end)()
+-- encounterId:
+--   The id passed to ENCOUNTER_START.
+--   This is the 7th value returned by EJ_GetEncounterInfo().
 
-JournalToEvent = (function()
-  local map = {}
-  for _, encounter in pairs(Encounters) do
-    map[encounter.journalId] = encounter.engageId
-  end
-  return map
-end)()
+-- example:
+--   local _, _, _, _, _, _, encounterId = EJ_GetEncounterInfo(journalId);
 
--- Addon
+local Debug = false;
 
-Memantine = LibStub("AceAddon-3.0"):NewAddon("Memantine", "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0")
-local AceGui = LibStub("AceGUI-3.0")
-
-local Gui = nil
-local EncounterId = nil
+local Memantine = LibStub("AceAddon-3.0"):NewAddon("Memantine", "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0");
+local AceGui = LibStub("AceGUI-3.0");
 
 function Memantine:OnInitialize()
-  self.db = LibStub("AceDB-3.0"):New("Memantine")
-  self:RegisterEvent("ADDON_LOADED")
-  self:RegisterEvent("ENCOUNTER_START")
-  self:RegisterChatCommand("memantine", "ChatCommand")
+  self:Debug("OnInitialize");
+
+  self.gui = nil;
+  self.encounterIdToJournalId = self:CreateEncounterIdToJournalIdMap();
+
+  self.db = LibStub("AceDB-3.0"):New("Memantine");
+
+  self:RegisterEvent("ADDON_LOADED");
+  self:RegisterEvent("ENCOUNTER_START");
+
+  self:RegisterChatCommand("memantine", "ChatCommand");
 end
 
+function Memantine:CreateEncounterIdToJournalIdMap()
+  self:Debug("CreateEncounterIdToJournalIdMap");
+
+  local encounterIdToJournalId = {};
+  for journalId = 1, 3000 do
+    local _, _, _, _, _, _, encounterId = EJ_GetEncounterInfo(journalId);
+    if (encounterId) then
+      encounterIdToJournalId[encounterId] = journalId;
+    end
+  end
+  return encounterIdToJournalId;
+end
+
+-- For debug: /memantine 2124 1
 function Memantine:ChatCommand(command)
+  self:Debug("ChatCommand", command);
 
   local parts = {}
   for part in string.gmatch(command, "%S+") do
-    parts[#parts + 1] = part
+    parts[#parts + 1] = part;
   end
 
-  self:ENCOUNTER_START("ENCOUNTER_START", tonumber(parts[1]), "TEST", tonumber(parts[2]), nil)
+  self:ENCOUNTER_START("ENCOUNTER_START", tonumber(parts[1]), "TEST", tonumber(parts[2]), nil);
 end
 
 function Memantine:ADDON_LOADED(eventName, addonName)
+  self:Debug("ADDON_LOADED", eventName, addonName);
+
   if addonName == "Blizzard_EncounterJournal" then
-    self:GuiInitialize()
+    self:CreateGui();
   end
 end
 
 function Memantine:GetLootSpecializations()
-  local specializations = {}
-  specializations[-1] = "Do not change"
-  specializations[0] = "Current Specialization"
+  self:Debug("GetLootSpecializations");
+
+  local specializations = {};
+  specializations[-1] = "Do not change";
+  specializations[0] = "Current Specialization";
   for i = 1, GetNumSpecializations() do
-    local id, name = GetSpecializationInfo(i)
-    specializations[id] = name
+    local id, name = GetSpecializationInfo(i);
+    specializations[id] = name;
   end
-  return specializations
+  return specializations;
 end
 
 function Memantine:GetSpecializationIndex(lootSpecializationId)
+  self:Debug("GetSpecializationIndex", lootSpecializationId);
+
   for i = 1, GetNumSpecializations() do
-    local id, name = GetSpecializationInfo(i)
+    local id, name = GetSpecializationInfo(i);
     if id == lootSpecializationId then
-      return i
+      return i;
     end
   end
-  return nil
+  return nil;
 end
 
-function Memantine:GuiInitialize()
+function Memantine:CreateGui()
+  self:Debug("CreateGui");
 
-  Gui = AceGui:Create("Frame")
-  Gui:SetTitle("Memantine")
-  Gui:SetPoint("TOPLEFT", EncounterJournal, "TOPRIGHT", 32, 0)
-  Gui:SetWidth(200)
-  Gui:SetHeight(355)
-  Gui:SetParent(EncounterJournal)
-  Gui:SetLayout("List")
+  self.gui = AceGui:Create("Frame");
+  self.gui:SetTitle("Memantine");
+  self.gui:SetPoint("TOPLEFT", EncounterJournal, "TOPRIGHT", 32, 0);
+  self.gui:SetWidth(200);
+  self.gui:SetHeight(355);
+  self.gui:SetParent(EncounterJournal);
+  self.gui:SetLayout("List");
+
   -- Hide status bar
-  Gui.statustext:Hide()
-  Gui.statustext:GetParent():Hide()
+  self.gui.statustext:Hide();
+  self.gui.statustext:GetParent():Hide();
+
   -- Hide close button
-  local children = { Gui.frame:GetChildren() }
-  children[1]:Hide()
+  local children = { self.gui.frame:GetChildren() };
+  children[1]:Hide();
+
+  self:Debug("HookGui");
 
   -- Handle clicking home in the navbar
-  self:Hook("EJSuggestFrame_OpenFrame", function() self:SetEncounterId(nil) end, true)
-  self:Hook("EncounterJournal_ListInstances", function() self:SetEncounterId(nil) end, true)
+  self:SecureHook("EJSuggestFrame_OpenFrame", function()
+    self:Debug("EJSuggestFrame_OpenFrame");
+    self:UpdateVisibility();
+  end);
+
+  self:SecureHook("EncounterJournal_ListInstances", function()
+    self:Debug("EncounterJournal_ListInstances");
+    self:UpdateVisibility();
+  end);
+
   -- Handle tab switching
-  self:Hook("EncounterJournal_SetTab", function(tabType) self:SetTab(tabType) end, true)
+  self:SecureHook("EncounterJournal_SetTab", function(tabType)
+    self:Debug("EncounterJournal_SetTab");
+    self:UpdateVisibility();
+  end);
+
   -- Handle open/close of adventure guide
-  self:Hook(EncounterJournal, "Hide", function() self:SetEncounterId(nil) end, true)
-  self:Hook(EncounterJournal, "Show", function() self:SetEncounterId(nil) end, true)
+  self:SecureHook(EncounterJournal, "Hide", function()
+    self:Debug("EncounterJournal", "Hide");
+    self:UpdateVisibility();
+  end);
+
+  self:SecureHook(EncounterJournal, "Show", function()
+    self:Debug("EncounterJournal", "Show");
+    self:UpdateVisibility();
+  end);
+
   -- Handle boss/dungeon/etc changes
-  self:Hook("EncounterJournal_LootUpdate", function()
-    self:GuiUpdateDifficulties()
-    self:SetTab()
-  end, true)
-  -- Handle encounterId tracking
-  self:Hook("EncounterJournal_DisplayEncounter", function(encounterId) self:SetEncounterId(encounterId) end, true)
+  self:SecureHook("EncounterJournal_LootUpdate", function()
+    self:Debug("EncounterJournal_LootUpdate");
+    self:GuiUpdateDifficulties();
+    self:UpdateVisibility();
+  end)
+
+  -- Handle encounter changes
+  self:SecureHook("EncounterJournal_DisplayEncounter", function()
+    self:Debug("EncounterJournal_DisplayEncounter");
+    self:UpdateVisibility();
+  end);
 end
 
-function Memantine:SetEncounterId(encounterId)
-  --self:Print(encounterId)
-  EncounterId = encounterId
-  if encounterId then
-    local encounterName = EJ_GetEncounterInfo(encounterId);
-    Gui:SetTitle(encounterName)
-  end
-  self:SetTab()
+function Memantine:GetJournalId()
+  self:Debug("GetJournalId");
+
+  return self:IsEncounterJournalLootTabShown()
+    and EncounterJournal.encounterID
+    or nil;
 end
 
-function Memantine:SetTab(tabType)
-  --self:Print("GuiToggle")
-  local tabType = tabType or EncounterJournal and EncounterJournal.encounter and EncounterJournal.encounter.info and EncounterJournal.encounter.info.tab
-  local show = EncounterId and JournalToEvent[EncounterId] and tabType == 2
+function Memantine:IsEncounterJournalLootTabShown()
+  self:Debug("IsLootTab");
+
+  return EncounterJournal
+    and EncounterJournal:IsShown()
+    and EncounterJournal.encounter
+    and EncounterJournal.encounter:IsShown()
+    and EncounterJournal.encounter.info
+    and EncounterJournal.encounter.info.tab == 2
+    or false;
+end
+
+function Memantine:UpdateVisibility()
+  self:Debug("UpdateVisibility");
+
+  local journalId = self:GetJournalId();
+  local show = self:IsEncounterJournalLootTabShown() and journalId;
+
   if (show) then
-    Gui:Show()
+    local encounterName = EJ_GetEncounterInfo(journalId);
+    self.gui:SetTitle(encounterName);
+    self.gui:Show();
   else
-    Gui:Hide()
+    self.gui:Hide();
   end
+
 end
 
 function Memantine:GuiUpdateDifficulties()
-  --Memantine:Print("GuiUpdateDifficulties")
-  if not EncounterId then
-    return
+  self:Debug("GuiUpdateDifficulties");
+
+  local journalId = self:GetJournalId();
+  if not journalId then
+    return;
   end
 
-  Gui:SetWidth(200)
-  Gui:SetHeight(355)
-  Gui:ReleaseChildren()
+  self.gui:SetWidth(200);
+  self.gui:SetHeight(355);
+  self.gui:ReleaseChildren();
 
-  local lootSpecializations = self:GetLootSpecializations()
+  local lootSpecializations = self:GetLootSpecializations();
 
   -- Create difficulty dropdowns
-  local difficultyDropdowns = {}
+  local difficultyDropdowns = {};
   for difficultyId = 1, 34 do
     if EJ_IsValidInstanceDifficulty(difficultyId) then
-      local difficultyName = GetDifficultyInfo(difficultyId)
-      local difficultyDropdown = AceGui:Create("Dropdown")
-      difficultyDropdown.encounterId = EncounterId
-      difficultyDropdown.difficultyId = difficultyId
-      difficultyDropdown:SetRelativeWidth(1)
-      difficultyDropdown:SetLabel(difficultyName)
-      difficultyDropdown:SetList(lootSpecializations)
-      local lootSpecializationId = self:LoadLootSpecializationId(difficultyDropdown.encounterId, difficultyDropdown.difficultyId)
-      difficultyDropdown:SetValue(lootSpecializationId)
+      local difficultyName = GetDifficultyInfo(difficultyId);
+      local difficultyDropdown = AceGui:Create("Dropdown");
+      difficultyDropdown.journalId = journalId;
+      difficultyDropdown.difficultyId = difficultyId;
+      difficultyDropdown:SetRelativeWidth(1);
+      difficultyDropdown:SetLabel(difficultyName);
+      difficultyDropdown:SetList(lootSpecializations);
+      local lootSpecializationId = self:LoadLootSpecializationId(difficultyDropdown.journalId, difficultyDropdown.difficultyId);
+      difficultyDropdown:SetValue(lootSpecializationId);
       difficultyDropdown:SetCallback("OnValueChanged", function(info, name, key)
-        self:SaveLootSpecializationId(difficultyDropdown.encounterId, difficultyDropdown.difficultyId, key)
+        self:SaveLootSpecializationId(difficultyDropdown.journalId, difficultyDropdown.difficultyId, key);
       end)
-      table.insert(difficultyDropdowns, difficultyDropdown)
+      table.insert(difficultyDropdowns, difficultyDropdown);
     end
   end
 
   -- Create set all dropdown
-  local difficultyDropdown = AceGui:Create("Dropdown")
-  difficultyDropdown:SetRelativeWidth(1)
-  difficultyDropdown:SetLabel("All")
-  difficultyDropdown:SetList(lootSpecializations)
+  local difficultyDropdown = AceGui:Create("Dropdown");
+  difficultyDropdown:SetRelativeWidth(1);
+  difficultyDropdown:SetLabel("All");
+  difficultyDropdown:SetList(lootSpecializations);
   difficultyDropdown:SetCallback("OnValueChanged", function(info, name, key)
     if key ~= nil then
       for i = 1, #difficultyDropdowns do
-        difficultyDropdowns[i]:SetValue(key)
-        self:SaveLootSpecializationId(difficultyDropdowns[i].encounterId, difficultyDropdowns[i].difficultyId, key)
+        difficultyDropdowns[i]:SetValue(key);
+        self:SaveLootSpecializationId(difficultyDropdowns[i].journalId, difficultyDropdowns[i].difficultyId, key);
       end
-      difficultyDropdown:SetValue(nil)
+      difficultyDropdown:SetValue(nil);
     end
   end)
 
-  Gui:AddChild(difficultyDropdown)
+  self.gui:AddChild(difficultyDropdown);
   for i = 1, #difficultyDropdowns do
-    Gui:AddChild(difficultyDropdowns[i])
+    self.gui:AddChild(difficultyDropdowns[i]);
   end
 end
 
-function Memantine:SaveLootSpecializationId(encounterId, difficultyId, lootSpecializationId)
-  --self:Print("Saving value "..encounterId.." "..difficultyId.." "..lootSpecializationId)
-  self.db.char[encounterId] = self.db.char[encounterId] or {}
-  self.db.char[encounterId][difficultyId] = lootSpecializationId
+function Memantine:SaveLootSpecializationId(journalId, difficultyId, lootSpecializationId)
+  self:Debug("SaveLootSpecializationId", journalId, difficultyId, lootSpecializationId);
+
+  self.db.char[journalId] = self.db.char[journalId] or {};
+  self.db.char[journalId][difficultyId] = lootSpecializationId;
 end
 
-function Memantine:LoadLootSpecializationId(encounterId, difficultyId)
-  return self.db.char[encounterId] and self.db.char[encounterId][difficultyId] or -1
+function Memantine:LoadLootSpecializationId(journalId, difficultyId)
+  self:Debug("LoadLootSpecializationId", journalId, difficultyId);
+
+  return self.db.char[journalId] and self.db.char[journalId][difficultyId] or -1;
 end
 
 function Memantine:ENCOUNTER_START(eventName, encounterId, encounterName, difficultyId, groupSize)
-  --self:Print(eventName)
-  --self:Print(encounterId)
-  --self:Print(encounterName)
-  --self:Print(difficultyId)
-  --self:Print(groupSize)
-  local journalId = EventToJournal[encounterId]
+  self:Debug("ENCOUNTER_START", eventName, encounterId, encounterName, difficultyId, groupSize);
+
+  local journalId = self.encounterIdToJournalId[encounterId];
+  self:Debug("journalId", journalId);
+
   local journalEncounterName = EJ_GetEncounterInfo(journalId);
-  --self:Print(journalId or "nil")
-  local lootSpecializationId = self:LoadLootSpecializationId(journalId, difficultyId)
-  --self:Print(lootSpecializationId or "nil")
-  local specializationIndex = self:GetSpecializationIndex(lootSpecializationId)
-  local difficultyName = GetDifficultyInfo(difficultyId)
-  if (lootSpecializationId >= 0) then
-    local _, lootSpecializationName = GetSpecializationInfo(specializationIndex)
-    self:Print("Encounter "..journalEncounterName.." "..difficultyName.." started. Setting loot specialization to "..lootSpecializationName)
-    SetLootSpecialization(lootSpecializationId)
+  self:Debug("journalEncounterName", journalEncounterName);
+
+  local lootSpecializationId = self:LoadLootSpecializationId(journalId, difficultyId);
+  self:Debug("lootSpecializationId", lootSpecializationId);
+
+  local specializationIndex = self:GetSpecializationIndex(lootSpecializationId);
+  self:Debug("specializationIndex", specializationIndex);
+
+  local difficultyName = GetDifficultyInfo(difficultyId);
+  self:Debug("difficultyName", difficultyName);
+
+  if (lootSpecializationId == -1) then
+    self:Print("Encounter "..journalEncounterName.." "..difficultyName.." started. Not changing loot specialization.");
+  elseif (lootSpecializationId == 0) then
+    local _, lootSpecializationName = GetSpecializationInfo(GetSpecialization());
+    self:Print("Encounter "..journalEncounterName.." "..difficultyName.." started. Setting loot specialization to current specialization ("..lootSpecializationName..").");
+    SetLootSpecialization(0);
   else
-    self:Print("Encounter "..journalEncounterName.." "..difficultyName.." started. Not changing loot specialization.")
+    local _, lootSpecializationName = GetSpecializationInfo(specializationIndex);
+    self:Print("Encounter "..journalEncounterName.." "..difficultyName.." started. Setting loot specialization to "..lootSpecializationName..".");
+    SetLootSpecialization(lootSpecializationId);
+  end
+end
+
+function Memantine:Debug(...)
+  if (Debug) then
+    self:Print(...);
   end
 end
