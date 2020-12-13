@@ -11,7 +11,7 @@
 -- example:
 --   local _, _, _, _, _, _, encounterId = EJ_GetEncounterInfo(journalId);
 
-local Debug = true;
+local Debug = false;
 
 local Memantine = LibStub("AceAddon-3.0"):NewAddon("Memantine", "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0");
 local AceGui = LibStub("AceGUI-3.0");
