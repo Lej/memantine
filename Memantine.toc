@@ -1,7 +1,7 @@
-## Interface: 90001
+## Interface: 90002
 ## Title: Memantine
 ## Author: Lej
-## Version: 1.1.0
+## Version: 1.1.1
 ## SavedVariables: Memantine
 
 libs\LibStub\LibStub.lua

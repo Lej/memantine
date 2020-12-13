@@ -223,7 +223,7 @@ end
 function Memantine:IsValidInstanceDifficulty(difficultyId)
 
   -- EJ_IsValidInstanceDifficulty(difficultyId) returns false for Classic Raids and Mythic Keystone
-
+  self:Debug("difficulyId", difficultyId, "EncounterJournal.instanceID", EncounterJournal and EncounterJournal.instanceID);
   if (EncounterJournal) then
     if (difficultyId == 9) then -- 40 Player
       if (EncounterJournal.instanceID == 741) then return true; end -- Molten Core
@@ -232,17 +232,14 @@ function Memantine:IsValidInstanceDifficulty(difficultyId)
     elseif (difficultyId == 3) then -- 10 Player
       if (EncounterJournal.instanceID == 743) then return true; end -- Ruins of Ahn'Qiraj
     elseif (difficultyId == 8) then -- Mythic Keystone
-      if (EncounterJournal.instanceID == 968) then return true; end -- Atal'Dazar
-      if (EncounterJournal.instanceID == 1001) then return true; end -- Freehold
-      if (EncounterJournal.instanceID == 1012) then return true; end -- The MOTHERLODE!!
-      if (EncounterJournal.instanceID == 1036) then return true; end -- Shrine of the Storm
-      if (EncounterJournal.instanceID == 1030) then return true; end -- Temple of Sethraliss
-      if (EncounterJournal.instanceID == 1002) then return true; end -- Tol Dagor
-      if (EncounterJournal.instanceID == 1022) then return true; end -- The Underrot
-      if (EncounterJournal.instanceID == 1021) then return true; end -- Waycrest Manor
-      if (EncounterJournal.instanceID == 1041) then return true; end -- Kings' Rest
-      if (EncounterJournal.instanceID == 1023) then return true; end -- Siege of Boralus
-      if (EncounterJournal.instanceID == 1178) then return true; end -- Mechagon: Junkyard / Mechagon: Workshop
+      if (EncounterJournal.instanceID == 1182) then return true; end -- The Necrotic Wake
+      if (EncounterJournal.instanceID == 1183) then return true; end -- Plaguefall
+      if (EncounterJournal.instanceID == 1184) then return true; end -- Mists of Tirna Scithe
+      if (EncounterJournal.instanceID == 1185) then return true; end -- Halls of Atonement
+      if (EncounterJournal.instanceID == 1186) then return true; end -- Spires of Ascension
+      if (EncounterJournal.instanceID == 1187) then return true; end -- Theater of Pain
+      if (EncounterJournal.instanceID == 1188) then return true; end -- De Other Side
+      if (EncounterJournal.instanceID == 1189) then return true; end -- Sanguine Depths
     end
   end
 
