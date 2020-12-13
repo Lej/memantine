@@ -273,7 +273,7 @@ function Memantine:GuiUpdateDifficulties()
   -- Create difficulty dropdowns
   local difficultyDropdowns = {};
   for i, difficultyId in ipairs(self.difficultyIds) do
-    if self:IsValidInstanceDifficulty(difficultyId) then
+    if self:IsValidInstanceDifficulty(difficultyId, journalId) then
       local difficultyName = GetDifficultyInfo(difficultyId);
       local difficultyDropdown = AceGui:Create("Dropdown");
       difficultyDropdown.journalId = journalId;
