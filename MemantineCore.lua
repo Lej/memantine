@@ -11,7 +11,7 @@
 -- example:
 --   local _, _, _, _, _, _, encounterId = EJ_GetEncounterInfo(journalId);
 
-local Debug = false;
+local Debug = true;
 
 local Memantine = LibStub("AceAddon-3.0"):NewAddon("Memantine", "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0");
 local AceGui = LibStub("AceGUI-3.0");
@@ -220,27 +220,36 @@ function Memantine:UpdateVisibility()
 
 end
 
-function Memantine:IsValidInstanceDifficulty(difficultyId)
+-- journalId taken from EncounterJournal unless provided
+function Memantine:IsValidInstanceDifficulty(difficultyId, journalId)
 
   -- EJ_IsValidInstanceDifficulty(difficultyId) returns false for Classic Raids and Mythic Keystone
-  self:Debug("difficulyId", difficultyId, "EncounterJournal.instanceID", EncounterJournal and EncounterJournal.instanceID);
-  if (EncounterJournal) then
-    if (difficultyId == 9) then -- 40 Player
-      if (EncounterJournal.instanceID == 741) then return true; end -- Molten Core
-      if (EncounterJournal.instanceID == 742) then return true; end -- Blackwing Lair
-      if (EncounterJournal.instanceID == 744) then return true; end -- Temple of Ahn'Qiraj
-    elseif (difficultyId == 3) then -- 10 Player
-      if (EncounterJournal.instanceID == 743) then return true; end -- Ruins of Ahn'Qiraj
-    elseif (difficultyId == 8) then -- Mythic Keystone
-      if (EncounterJournal.instanceID == 1182) then return true; end -- The Necrotic Wake
-      if (EncounterJournal.instanceID == 1183) then return true; end -- Plaguefall
-      if (EncounterJournal.instanceID == 1184) then return true; end -- Mists of Tirna Scithe
-      if (EncounterJournal.instanceID == 1185) then return true; end -- Halls of Atonement
-      if (EncounterJournal.instanceID == 1186) then return true; end -- Spires of Ascension
-      if (EncounterJournal.instanceID == 1187) then return true; end -- Theater of Pain
-      if (EncounterJournal.instanceID == 1188) then return true; end -- De Other Side
-      if (EncounterJournal.instanceID == 1189) then return true; end -- Sanguine Depths
-    end
+  local journalId = journalId or (EncounterJournal and EncounterJournal.instanceID);
+  local instanceId = EncounterJournal and EncounterJournal.instanceID;
+  self:Debug("instanceId", instanceId, "difficulyId", difficultyId, "journalId", journalId);
+
+  -- 40 Player
+  if (difficultyId == 9) then
+    if (instanceId == 741) then return true; end -- Molten Core
+    if (instanceId == 742) then return true; end -- Blackwing Lair
+    if (instanceId == 744) then return true; end -- Temple of Ahn'Qiraj
+  end
+
+  -- 10 Player
+  if (difficultyId == 3) then
+    if (instanceId == 743) then return true; end -- Ruins of Ahn'Qiraj
+  end
+
+  -- Mythic Keystone
+  if (difficultyId == 8) then
+    if (journalId == 2396) then return true; end -- The Necrotic Wake (EncounterJournal.instanceID == 1182), Nalthor the Rimebinder (EncounterJournal.encounterID == 2396)
+    if (journalId == 2404) then return true; end -- Plaguefall (EncounterJournal.instanceID == 1183), Margrave Stradama (EncounterJournal.encounterID == 2404)
+    if (journalId == 2405) then return true; end -- Mists of Tirna Scithe (EncounterJournal.instanceID == 1184), Tred'ova (EncounterJournal.encounterID == 2405)
+    if (journalId == 2413) then return true; end -- Halls of Atonement (EncounterJournal.instanceID == 1185), Lord Chamberlain (EncounterJournal.encounterID == 2413)
+    if (journalId == 2412) then return true; end -- Spires of Ascension (EncounterJournal.instanceID == 1186), Devos, Paragon of Doubt (EncounterJournal.encounterID == 2412)
+    if (journalId == 2417) then return true; end -- Theater of Pain (EncounterJournal.instanceID == 1187), Mordretha, the Endless Empress (EncounterJournal.encounterID == 2417)
+    if (journalId == 2410) then return true; end -- De Other Side (EncounterJournal.instanceID == 1188), Mueh'zala (EncounterJournal.encounterID == 2410)
+    if (journalId == 2407) then return true; end -- Sanguine Depths (EncounterJournal.instanceID == 1189), General Kaal (EncounterJournal.encounterID == 2407)
   end
 
   return EJ_IsValidInstanceDifficulty(difficultyId);
@@ -311,6 +320,12 @@ end
 
 function Memantine:LoadLootSpecializationId(journalId, difficultyId)
   self:Debug("LoadLootSpecializationId", journalId, difficultyId);
+
+  -- Handle bad config. E.g. Mythic+ for non end bosses.
+  if not self:IsValidInstanceDifficulty(difficultyId, journalId) then
+    self:Debug("Encounter not configurable.");
+    return -1;
+  end
 
   return self.db.char[journalId] and self.db.char[journalId][difficultyId] or -1;
 end
